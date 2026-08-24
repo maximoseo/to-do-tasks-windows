@@ -1,0 +1,54 @@
+{
+  "name": "maximo-todo-windows",
+  "productName": "Maximo ToDo",
+  "version": "1.0.0",
+  "description": "Maximo ToDo — Windows desktop app for the TO-DO LIST Dashboard (to-do-tasks.maximo-seo.ai)",
+  "main": "src/main.js",
+  "author": {
+    "name": "Maximo SEO",
+    "email": "service@maximo-seo.com"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/smoke.js",
+    "build": "node scripts/validate.js",
+    "dist:zip": "electron-builder --win zip --x64",
+    "dist:nsis": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^36.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.maximoseo.todo",
+    "productName": "Maximo ToDo",
+    "asar": true,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icons/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "zip", "arch": ["x64"] },
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icons/icon.ico",
+      "artifactName": "MaximoToDo-Windows-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Maximo ToDo",
+      "artifactName": "MaximoToDo-Windows-Setup-${version}.${ext}"
+    }
+  }
+}
