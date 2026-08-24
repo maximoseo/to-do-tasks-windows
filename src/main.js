@@ -276,6 +276,54 @@ ipcMain.handle('todo:set-api-key', (_e, key) => {
   return { ok: false, error: 'invalid_key_format' };
 });
 
+// ── App update checker (GitHub Releases) ────────────────────────────────────
+const RELEASE_API = `https://api.github.com/repos/${cfg.GITHUB_REPO}/releases/latest`;
+
+function compareVersions(a, b) {
+  // 'v1.2.3' vs '1.0.0' → numeric per-segment compare.
+  const pa = String(a).replace(/^v/, '').split('.').map(Number);
+  const pb = String(b).replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+
+let updateCheckTimer = null;
+let lastAnnouncedVersion = null;
+
+async function checkForUpdates(silent) {
+  try {
+    const res = await fetch(RELEASE_API, {
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': cfg.APP_NAME },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return;
+    const rel = await res.json();
+    if (!rel.tag_name) return;
+    if (compareVersions(rel.tag_name, cfg.APP_VERSION) <= 0) return; // up to date
+    if (lastAnnouncedVersion === rel.tag_name) return; // already told the user
+    lastAnnouncedVersion = rel.tag_name;
+    const zip = (rel.assets || []).find((a) => /-x64\.zip$/.test(a.name));
+    const url = (zip && zip.browser_download_url) || rel.html_url;
+    showToast(
+      `${cfg.APP_NAME} — עדכון זמין (${rel.tag_name})`,
+      'לחיצה תפתח את דף ההורדה',
+      url,
+    );
+    if (STATE.tray) STATE.tray.setToolTip(`${cfg.APP_NAME} — עדכון חדש: ${rel.tag_name}`);
+  } catch {
+    // Best-effort.
+  }
+}
+
+function startUpdateChecks() {
+  checkForUpdates(true);
+  updateCheckTimer = setInterval(() => checkForUpdates(false), 6 * 60 * 60 * 1000); // every 6h
+}
+
 // ── App lifecycle ───────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   createWindow();
@@ -284,6 +332,7 @@ app.whenReady().then(() => {
   STATE.tray.setToolTip(`${cfg.APP_NAME} — ${cfg.PROD_ORIGIN}`);
   const trayMenu = Menu.buildFromTemplate([
     { label: 'פתח את ה־Dashboard', click: focusWindow },
+    { label: 'בדוק עדכונים עכשיו', click: () => checkForUpdates(false) },
     { label: 'התראות: הגדר מפתח API', click: openKeyInputWindow },
     { type: 'separator' },
     {
@@ -312,6 +361,7 @@ app.whenReady().then(() => {
   STATE.tray.on('double-click', focusWindow);
 
   startPolling();
+  startUpdateChecks();
 
   app.on('second-instance', () => focusWindow());
   app.on('activate', () => {

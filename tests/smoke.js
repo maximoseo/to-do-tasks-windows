@@ -7,6 +7,7 @@ const cfg = require('../src/config');
 assert.strictEqual(cfg.PROD_ORIGIN, 'https://to-do-tasks.maximo-seo.ai');
 assert.ok(cfg.DASHBOARD_PATH.startsWith('/dashboard'));
 assert.ok(cfg.ALLOWED_HOSTS.includes('to-do-tasks.maximo-seo.ai'));
+assert.strictEqual(cfg.GITHUB_REPO, 'maximoseo/to-do-tasks-windows');
 
 // URL allowlist logic — replicate the main-process check here.
 function isAllowedUrl(url) {
